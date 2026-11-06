@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hệ Thống Cảnh Báo Ngập Lụt Thời Gian Thực (RT-DETR AI)</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌊</text></svg>">
+
+  <!-- Google Fonts Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- ==============================================================================
+         HEADER & TOP SYSTEM BAR
+         ============================================================================== -->
+    <header class="header">
+      <div class="brand-section">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="m4.93 19.07 1.41-1.41"></path>
+            <path d="m17.66 6.34 1.41-1.41"></path>
+            <circle cx="12" cy="12" r="7"></circle>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>
+            AQUA-GUARD // HỆ THỐNG CẢNH BÁO NGẬP LỤT
+            <span class="badge-tech" id="modelStatusBadge">RT-DETR • ONNX</span>
+          </h1>
+          <p>Giám sát thời gian thực từ Camera giao thông & Suy luận biên độ trễ thấp</p>
+        </div>
+      </div>
+
+      <div class="header-status-group">
+        <!-- WebSocket Online Status Pill -->
+        <div class="status-pill" id="statusPill">
+          <div class="status-dot connecting" id="statusDot"></div>
+          <span id="statusText">Đang kết nối WebSocket...</span>
+        </div>
+
+        <!-- Connect / Disconnect Action Button -->
+        <button class="btn btn-secondary" id="btnToggleConnect">
+          <span>Kết nối lại</span>
+        </button>
+
+        <!-- Sound Alert Toggle -->
+        <button class="btn btn-secondary btn-icon" id="btnToggleSound" title="Bật/Tắt âm thanh cảnh báo còi hú">
+          <span id="soundIcon">🔊</span>
+        </button>
+
+        <!-- Settings Button -->
+        <button class="btn btn-secondary btn-icon" id="btnOpenSettings" title="Cấu hình hệ thống & Tham số AI">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==============================================================================
+         MAIN WORKSPACE: VIEWPORT (LEFT) vs TELEMETRY & LOGS (RIGHT)
+         ============================================================================== -->
+    <main class="main-content">
+      
+      <!-- LEFT PANEL: MEDIA STREAM & HUD STAGE -->
+      <section class="stream-panel">
+        
+        <!-- Source Selector Tabs -->
+        <nav class="source-selector">
+          <button class="source-tab active" data-tab="camera">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Camera Trực Tiếp</span>
+          </button>
+          
+          <button class="source-tab" data-tab="video">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span>Tệp Video</span>
+          </button>
+
+          <button class="source-tab" data-tab="image">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>Ảnh Đơn</span>
+          </button>
+
+          <button class="source-tab" data-tab="samples">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+              <polyline points="13 2 13 9 20 9"></polyline>
+            </svg>
+            <span>Dữ Liệu Mẫu (Demo)</span>
+          </button>
+        </nav>
+
+        <!-- Viewport Display Card -->
+        <div class="viewport-card" id="viewportCard">
+          
+          <div class="viewport-stage" id="viewportStage">
+            
+            <!-- Video Element (Camera / Video file) -->
+            <video id="videoElement" playsinline muted autoplay style="display: none;"></video>
+            
+            <!-- Preview Image (Static Image / Samples) -->
+            <img id="previewImage" class="preview-media" alt="Flood Preview" style="display: none;" />
+
+            <!-- HUD Canvas Overlay (Bounding boxes, labels, HUD crosshair) -->
+            <canvas id="hudCanvas" class="hud-canvas"></canvas>
+
+            <!-- CRT Scanline Effect -->
+            <div class="scanline-effect"></div>
+
+            <!-- Empty Placeholder -->
+            <div class="empty-placeholder" id="emptyPlaceholder">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+              <h3>HỆ THỐNG GIÁM SÁT SẴN SÀNG</h3>
+              <p>Chọn nguồn camera hoặc tải lên video/ảnh để bắt đầu phân tích cảnh báo ngập lụt theo thời gian thực.</p>
+            </div>
+
+            <!-- Live HUD Tag -->
+            <div class="hud-live-tag" id="hudLiveTag" style="display: none;">
+              <span class="hud-live-dot"></span>
+              <span>LIVE HUD</span>
+            </div>
+
+            <!-- Watermark Info -->
+            <div class="hud-watermark" id="hudWatermark">
+              <span>RT-DETR 640x640</span>
+              <span class="mono">CONF: 45%</span>
+            </div>
+
+          </div>
+
+          <!-- Dynamic Alert Banner Under Viewport -->
+          <div class="alert-banner idle" id="alertBanner">
+            <div class="alert-banner-content">
+              <div class="alert-banner-icon" id="alertBannerIcon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div class="alert-banner-text">
+                <h3 id="alertBannerTitle">HỆ THỐNG ĐANG CHỜ KHỞI CHẠY</h3>
+                <p id="alertBannerSubtitle">Nhấn "Bật Camera" hoặc chọn Video/Ảnh để bắt đầu giám sát thời gian thực.</p>
+              </div>
+            </div>
+            
+            <button class="btn btn-secondary btn-icon" id="btnCaptureSnapshot" title="Chụp ảnh Snapshot màn hình kèm Bounding Box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Controls Toolbar Card -->
+        <div class="stream-controls-card">
+          
+          <!-- CAMERA CONTROLS -->
+          <div class="controls-left" id="cameraControls">
+            <button class="btn btn-primary" id="btnStartCamera">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Bật Camera</span>
+            </button>
+            
+            <button class="btn btn-danger" id="btnStopCamera" style="display: none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="6" width="12" height="12"></rect>
+              </svg>
+              <span>Dừng Camera</span>
+            </button>
+
+            <select class="form-control" id="cameraSelect" style="max-width: 200px;">
+              <option value="">Đang tìm camera...</option>
+            </select>
+          </div>
+
+          <!-- VIDEO CONTROLS -->
+          <div class="controls-left" id="videoControls" style="display: none; width: 100%;">
+            <div style="display: flex; gap: 10px; width: 100%; align-items: center; flex-wrap: wrap;">
+              <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/ogg" style="display: none;" />
+              <button class="btn btn-primary" id="btnSelectVideo">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>Tải Video Lên</span>
+              </button>
+
+              <button class="btn btn-secondary" id="btnPlayPauseVideo">
+                <span>Phát Video</span>
+              </button>
+
+              <select class="form-control" id="videoSpeedSelect" style="width: 85px;">
+                <option value="0.5">0.5x</option>
+                <option value="1.0" selected>1.0x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2.0">2.0x</option>
+              </select>
+
+              <label class="form-check" style="margin-left: 6px;">
+                <input type="checkbox" id="videoLoopToggle" checked />
+                <span>Lặp lại</span>
+              </label>
+
+              <span class="mono" id="videoTimeDisplay" style="font-size: 0.75rem; color: var(--text-muted); margin-left: auto;">00:00 / 00:00</span>
+            </div>
+
+            <!-- Video Scrubber -->
+            <div class="video-scrubber" style="margin-top: 8px;">
+              <input type="range" id="videoScrubber" min="0" max="100" value="0" />
+            </div>
+          </div>
+
+          <!-- IMAGE CONTROLS -->
+          <div class="controls-left" id="imageControls" style="display: none;">
+            <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp" style="display: none;" />
+            <button class="btn btn-primary" id="btnSelectImage">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Chọn Ảnh Từ Máy</span>
+            </button>
+            <button class="btn btn-secondary" id="btnAnalyzeImage">
+              <span>Phân Tích Lại</span>
+            </button>
+          </div>
+
+          <!-- SAMPLE CONTROLS -->
+          <div class="controls-left" id="sampleControls" style="display: none; width: 100%;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px;">
+              Chọn một trong các ảnh tình huống ngập lụt thực tế bên dưới để suy luận ngay:
+            </div>
+            <div class="sample-grid" id="sampleGrid"></div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- RIGHT PANEL: TELEMETRY & INCIDENT TIMELINE -->
+      <aside class="metrics-panel">
+        
+        <!-- TELEMETRY & SYSTEM PERFORMANCE CARD -->
+        <div class="panel-card">
+          <div class="card-header">
+            <h2>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg>
+              <span>Chỉ Số Thời Gian Thực</span>
+            </h2>
+            <span class="badge-tech text-cyan">METRICS</span>
+          </div>
+
+          <div class="telemetry-grid">
+            
+            <div class="telemetry-item">
+              <span class="telemetry-label">Tốc độ khung hình</span>
+              <div class="telemetry-value" id="telemetryFps">0 FPS</div>
+              <span class="telemetry-sub">Suy luận & Render</span>
+            </div>
+
+            <div class="telemetry-item">
+              <span class="telemetry-label">Độ trễ suy luận</span>
+              <div class="telemetry-value" id="telemetryLatency">0 ms</div>
+              <span class="telemetry-sub">ONNX Runtime RAM</span>
+            </div>
+
+            <div class="telemetry-item">
+              <span class="telemetry-label">Số vùng ngập</span>
+              <div class="telemetry-value danger" id="telemetryCount">0</div>
+              <span class="telemetry-sub">Class: ngap_lut</span>
+            </div>
+
+            <div class="telemetry-item">
+              <span class="telemetry-label">Độ tin cậy tối đa</span>
+              <div class="telemetry-value" id="telemetryMaxConf">0%</div>
+              <span class="telemetry-sub">Confidence Score</span>
+            </div>
+
+            <div class="telemetry-item" style="grid-column: span 2;">
+              <span class="telemetry-label">Tỷ lệ bao phủ ngập ước tính</span>
+              <div class="telemetry-value text-warning" id="telemetryRatio">0%</div>
+              <span class="telemetry-sub">Diện tích ngập / Tổng khung hình</span>
+            </div>
+
+          </div>
+
+          <!-- Mini Sparkline Latency Chart -->
+          <div class="chart-container">
+            <div class="chart-header">
+              <span>Độ trễ suy luận 30 khung hình gần nhất</span>
+              <span class="mono">ms</span>
+            </div>
+            <canvas id="sparklineCanvas" class="sparkline-canvas" width="340" height="60"></canvas>
+          </div>
+
+        </div>
+
+        <!-- INCIDENT LOGS CARD -->
+        <div class="panel-card" style="flex: 1;">
+          <div class="card-header">
+            <h2>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Nhật Ký Cảnh Báo Ngập</span>
+            </h2>
+            <div style="display: flex; gap: 4px;">
+              <button class="btn btn-ghost btn-icon" id="btnExportLogs" title="Xuất báo cáo CSV">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </button>
+              <button class="btn btn-ghost btn-icon" id="btnClearLogs" title="Xóa lịch sử sự cố">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="incident-list" id="incidentList">
+            <div class="empty-log">Chưa ghi nhận sự cố ngập lụt nào trong phiên này.</div>
+          </div>
+
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- ==============================================================================
+         MODAL: CẤU HÌNH HỆ THỐNG (SETTINGS)
+         ============================================================================== -->
+    <div class="modal-backdrop" id="settingsModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span>Cấu Hình Tham Số Hệ Thống</span>
+          </h3>
+          <button class="btn btn-ghost btn-icon" id="btnCloseSettings">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Địa chỉ Máy Chủ WebSocket (ws://...):</label>
+            <input type="text" class="form-control mono" id="inputWsUrl" value="ws://localhost:8000/ws/flood-detection" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Giới hạn tần suất gửi khung hình (FPS Limit):</label>
+            <select class="form-control" id="inputFps">
+              <option value="5">5 FPS (Tiết kiệm băng thông tối đa)</option>
+              <option value="10">10 FPS (Cân bằng mạng yếu)</option>
+              <option value="15" selected>15 FPS (Khuyến nghị mượt mà)</option>
+              <option value="20">20 FPS (Tốc độ cao)</option>
+              <option value="30">30 FPS (Tối đa)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label">Ngưỡng lọc Độ tin cậy (Confidence Threshold):</label>
+              <span class="mono text-cyan" id="valConfidence">45%</span>
+            </div>
+            <input type="range" min="0.2" max="0.95" step="0.05" value="0.45" id="inputConfidence" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="checkSound" checked />
+              <span>Bật âm thanh còi hú khi phát hiện ngập lụt</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="checkShowBbox" checked />
+              <span>Hiển thị Bounding Box khung nhận diện</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-check">
+              <input type="checkbox" id="checkShowLabels" checked />
+              <span>Hiển thị Nhãn và Phần trăm Độ Tin Cậy</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="btnSaveSettings">Lưu Cấu Hình</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==============================================================================
+         MODAL: XEM SNAPSHOT PHÓNG TO
+         ============================================================================== -->
+    <div class="modal-backdrop" id="snapshotModal">
+      <div class="modal-dialog" style="max-width: 720px;">
+        <div class="modal-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-danger">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            <span>Chi Tiết Ảnh Chụp Cảnh Báo Ngập</span>
+          </h3>
+          <button class="btn btn-ghost btn-icon" id="btnCloseSnapshot">✕</button>
+        </div>
+
+        <div class="modal-body" style="padding: 14px;">
+          <img id="snapshotModalImg" src="" alt="Snapshot Detail" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: block;" />
+          <div id="snapshotModalMeta" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px; line-height: 1.6;"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="btnDownloadSnapshot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Tải Ảnh Về Máy</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/samples.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

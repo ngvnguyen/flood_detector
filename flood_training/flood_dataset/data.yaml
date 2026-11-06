@@ -1,0 +1,8 @@
+# Cấu hình dataset nhận diện mức độ ngập lụt cho RT-DETR
+path: C:/Users/nguye/Downloads/C-nh-b-o-ng-p-l-t-/flood_training/flood_dataset
+train: images/train
+val: images/val
+
+
+names:
+  0: duong_ngap
