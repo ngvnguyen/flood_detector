@@ -37,10 +37,7 @@ Dự án cung cấp giải pháp toàn diện cho bài toán **Nhận diện và
 
 ## 🏷️ Các nhãn nhận diện (Classes & Mức độ cảnh báo)
 
-Hệ thống phân cấp cảnh báo ngập lụt thành 3 mức độ thực tế:
-- **`0: binh_thuong`** (🟢 Xanh lá `#10B981`): Đường khô ráo hoặc ướt mưa nhẹ, giao thông lưu thông bình thường, an toàn.
-- **`1: ngap_di_duoc`** (🟡 Vàng cam `#F59E0B`): Ngập nhẹ / nông (mực nước dưới nửa bánh xe máy, < 20cm), phương tiện có thể đi chậm qua được.
-- **`2: ngap_khong_di_duoc`** (🔴 Đỏ cảnh báo `#EF4444`): Ngập sâu nguy hiểm (mực nước quá nửa bánh xe máy, ngập ống xả/lốc máy hoặc người đi bộ phải lội qua đầu gối), xe có nguy cơ chết máy hoặc bị ngâm nước.
+0:ngap_lut
 
 ---
 
@@ -128,7 +125,6 @@ Nếu muốn tận dụng tài nguyên đám mây hoặc train batch size lớn 
        }
      }
      ```
-
 ---
 
 
